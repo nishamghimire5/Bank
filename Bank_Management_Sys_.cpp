@@ -2,30 +2,14 @@
 #include <iostream>
 #include <stdio.h>
 #include <conio.h>
+#include <iomanip>
 #include <fstream>
 #include <stdlib.h>
-#include <iomanip>
+
 #include <string>
+#include "function1.h"
+#include "function2.h"
 using namespace std;
-
-class bank
-{
-    char name[40],address[40],type[10];
-    int balance,id;
-    string acc_num;
-    static int totalCustomers;
-
-public:
-    //functions available
-        void openAccount(); //open a new account
-        void depositMoney(); //put money or add money
-        void modify(); // to add new datas
-        void withdrawMoney(); //take money out or subtract
-        void displayAccount(); //show account details
-        void report() const; //to show data in tabular form
-
-        int ReturnBalance(int acc_num) const{ return balance; }
-};
 
 string create_accn(int id){
     string concat;
@@ -33,8 +17,6 @@ string create_accn(int id){
     concat = to_string(random) + to_string(id) + to_string(rand());
     return concat;
 }
-
-//defining functions
 
 //first function
 void bank :: openAccount(){
@@ -107,16 +89,7 @@ void bank :: openAccount(){
     void bank :: report() const{
         cout << id << setw(6) << acc_num << setw(6) << name << setw(6) << address << setw(6) << type << setw(6) << balance << endl;
     }
-
-/////////////////////////functions declarations///////////////////
-    void writeAccount(); //writes record in file
-    void displayAccount(); //displays account details
-    void modifyAccount(int); //modifies records of file
-    void deleteAccount(int); //deletes record of file
-    void displayAll(); //displays all accounts
-    void DepositWithdraw(int, int); //adds or deducts transactions for the given account
-    void FirstScreen(); //show the intro screen
-
+    
     int main()
     {
         //program execute form here |-->
@@ -172,3 +145,155 @@ void bank :: openAccount(){
 
         return 0;
 }
+// functions to write in file
+void writeAccount(){
+    bank acc;
+    ofstream afile;
+    afile.open("Bank.dat", ios::binary | ios::app);
+    acc.openAccount();
+    afile.write(reinterpret_cast<char *>(&acc), sizeof(bank));
+    afile.close();
+}
+
+//fucntion to read inside file
+
+void displayAccount(int n){
+    bank acc;
+    bool what = false;
+    ifstream inFile;
+    inFile.open("bank.dat", ios::binary);
+    if(!inFile){
+        cout << "File not found!!\n";
+        return;
+    }
+    cout << "\nBalance available is : \n";
+
+    while(inFile.read(reinterpret_cast<char *>(&acc),sizeof(bank)))
+        {
+            if(acc.ReturnAccnum()==n){
+                acc.displayAccount();
+                what = true;
+            }
+        }
+        inFile.close();
+        if(what == false){
+            cout << "Account ID doesn't exist.\n";
+        }
+}
+
+void modifyAccount(int n){
+    bool check = false;
+    bank acc;
+    fstream File;
+    File.open("bank.dat", ios::binary|ios::in|ios::out);
+    if(!File){
+        cout << "File not found!!\n";
+        return;
+        }
+    while(!File.eof() && check == false){
+        File.read(reinterpret_cast<char *>(&acc), sizeof(bank));
+        if(acc.ReturnAccnum() == n){
+            acc.displayAccount();
+            cout << "Enter new details of the account"<<endl;
+            acc.modify();
+            int pos = (-1) * static_cast<int>(sizeof(acc));
+            cout << "\n\n\t Recod is modified :)\n";
+            check = true;
+        }
+    }
+    File.close();
+    if(check == false)
+            cout << "Account ID doesn't exist.\n";
+}
+
+//function to delete record
+void deleteAccount(int n){
+    bank acc;
+    ifstream inFile;
+    ofstream outFile;
+    inFile.open("bank.dat", ios::binary);
+    if (!inFile){
+        cout << "File not found!!\n";
+        return;
+    }
+    outFile.open("temp.dat", ios::binary);
+    inFile.seekg(0, ios::beg);
+    while(inFile.read(reinterpret_cast<char *>(&acc), sizeof(bank)))
+    {
+        if(acc.ReturnAccnum() != n)
+        {
+            outFile.write(reinterpret_cast<char *>(&acc), sizeof(bank));
+        }
+    } 
+    inFile.close();
+    outFile.close();
+    remove("bank.dat");
+    rename("temp.dat","bank.dat");
+    cout << "\n\n\tRecord is deleted :)\n";
+}
+
+//////////////Function to display all accounts available//////////////////
+
+void displayAll(){
+    bank acc;
+    ifstream inFile;
+    inFile.open("bank.dat", ios::binary);
+    if(!inFile){
+        cout << "File not found!!\n";
+        return;
+        }
+        cout << "\n\n\t\tAccount Holders : \n\n";
+        cout << "----------------------------------------------------------------------------------------------------------------\n";
+        cout << "ID      A/c No.        Name            Address          Type       Balance\n";
+        cout << "----------------------------------------------------------------------------------------------------------------\n";
+
+        while(inFile.read(reinterpret_cast<char *>(&acc), sizeof(bank))){
+            acc.report();
+        }
+        inFile.close();
+}
+
+/////////////////Function to deposit and Withdraw//////////////////////////////
+
+void DepositWithdraw(int n,int which){
+    bool search = false;
+    bank acc;
+    fstream File;
+    File.open("bank.dat", ios::binary|ios::in|ios::out);
+    if(!File){
+        cout << "File not found!!\n";
+        return;
+    }
+    while(!File.eof() && search==false){
+        File.read(reinterpret_cast<char *>(&acc), sizeof(bank));
+        if(acc.ReturnAccnum() == n){
+            acc.displayAccount();
+            if (which == 1){
+                acc.depositMoney();
+            }
+            else if(which == 2){
+                acc.withdrawMoney();
+            }
+            int pos=(-1)*static_cast<int>(sizeof(acc));
+			File.seekp(pos,ios::cur);
+			File.write(reinterpret_cast<char *> (&acc), sizeof(bank));
+			cout<<"\n\n\t Record is Updated\n";
+			which=true;
+        }
+    }
+        File.close();
+	if(which==false)
+		cout<<"\n\n Account Not Found \n";
+}
+
+/////////////////////////////////function for first screen ////////////////////////////////////////////
+
+void FirstScreen(){
+    cout<<"\n\n"<<setw(30)<<"  BANK";
+	cout<<"\n\n"<<setw(34)<<"MANAGEMENT";
+	cout<<"\n\n"<<setw(32)<<"  SYSTEM";
+	cout<<"\n\n\n\n"<<setw(25)<<"MADE BY : TheNisham\n\n\n\n";
+
+	cin.get();
+}
+
