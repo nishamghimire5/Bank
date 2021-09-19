@@ -23,6 +23,8 @@ public:
         void withdrawMoney(); //take money out or subtract
         void displayAccount(); //show account details
         void report() const; //to show data in tabular form
+
+        int ReturnBalance(int acc_num) const{ return balance; }
 };
 
 string create_accn(int id){
